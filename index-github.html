@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SmartTools Pro - 15 AI & Web Utilities in One">
+    <title>SmartTools Pro - 15 Professional Utilities</title>
+    
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="./assets/css/style.css">
+    
+    <link rel="icon" type="image/svg+xml" href="./assets/images/favicon.svg">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    
+    <div x-data="app()" x-init="init()" class="flex h-screen overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside class="w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 md:relative absolute inset-y-0 left-0 z-50 transform md:translate-x-0"
+               :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+            
+            <!-- Logo & Header -->
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center space-x-3 mb-2">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="zap" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900 dark:text-white" x-text="config.site.name"></h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="config.site.tagline"></p>
+                    </div>
+                </div>
+                
+                <!-- Search -->
+                <div class="relative mt-4">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" 
+                           x-model="searchQuery"
+                           @input="filterTools()"
+                           placeholder="Search tools..." 
+                           class="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white">
+                </div>
+            </div>
+            
+            <!-- Tools List -->
+            <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
+                <template x-for="tool in filteredTools" :key="tool.id">
+                    <button @click="selectTool(tool.id)" 
+                            class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 group"
+                            :class="currentTool === tool.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'">
+                        <i :data-lucide="tool.icon" class="w-5 h-5 flex-shrink-0"></i>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-sm truncate" x-text="tool.name"></p>
+                            <p class="text-xs opacity-75 truncate" x-text="tool.description"></p>
+                        </div>
+                    </button>
+                </template>
+                
+                <div x-show="filteredTools.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <i data-lucide="search-x" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                    <p class="text-sm">No tools found</p>
+                </div>
+            </nav>
+            
+            <!-- Footer Actions -->
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                <button @click="toggleTheme()" 
+                        class="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                    <i :data-lucide="darkMode ? 'sun' : 'moon'" class="w-4 h-4"></i>
+                    <span class="text-sm font-medium" x-text="darkMode ? 'Light Mode' : 'Dark Mode'"></span>
+                </button>
+                
+                <button @click="openAdmin()" 
+                        class="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                    <span class="text-sm font-medium">Admin Panel</span>
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto custom-scrollbar">
+            <!-- Mobile Header -->
+            <div class="md:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between sticky top-0 z-40">
+                <button @click="sidebarOpen = !sidebarOpen" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <h2 class="font-semibold text-gray-900 dark:text-white">SmartTools Pro</h2>
+                <div class="w-10"></div>
+            </div>
+            
+            <!-- Tool Content -->
+            <div id="tool-content" class="p-6 md:p-8">
+                <!-- Welcome Screen -->
+                <div x-show="!currentTool" class="max-w-4xl mx-auto">
+                    <div class="text-center py-12">
+                        <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                            <i data-lucide="zap" class="w-10 h-10 text-white"></i>
+                        </div>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Welcome to SmartTools Pro</h2>
+                        <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">Select a tool from the sidebar to get started</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                            <div class="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                    <i data-lucide="zap" class="w-6 h-6 text-blue-600 dark:text-blue-400"></i>
+                                </div>
+                                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">15 Powerful Tools</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Everything you need in one place</p>
+                            </div>
+                            
+                            <div class="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                    <i data-lucide="shield" class="w-6 h-6 text-purple-600 dark:text-purple-400"></i>
+                                </div>
+                                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Privacy First</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">All processing done locally</p>
+                            </div>
+                            
+                            <div class="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                                <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                    <i data-lucide="smartphone" class="w-6 h-6 text-green-600 dark:text-green-400"></i>
+                                </div>
+                                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Fully Responsive</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Works on all devices</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Admin Modal -->
+    <div x-show="adminOpen" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+         @click.self="closeAdmin()">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Admin Panel</h3>
+                <button @click="closeAdmin()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div x-show="!adminAuthenticated">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Enter admin password to manage tools</p>
+                <input type="password" 
+                       x-model="adminPassword"
+                       @keyup.enter="loginAdmin()"
+                       placeholder="Enter password"
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-4 dark:bg-gray-700 dark:text-white">
+                <button @click="loginAdmin()" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg">
+                    Login
+                </button>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Default password: admin123</p>
+            </div>
+            
+            <div x-show="adminAuthenticated">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Manage tool visibility</p>
+                <div class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
+                    <template x-for="tool in tools" :key="tool.id">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-900 dark:text-white" x-text="tool.name"></span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" 
+                                       x-model="tool.enabled"
+                                       @change="saveToolStates()"
+                                       class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                    </template>
+                </div>
+                <button @click="closeAdmin()" 
+                        class="w-full mt-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-medium py-2 px-4 rounded-lg">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main App Script -->
+    <script src="./assets/js/app.js"></script>
+    <script src="./assets/js/tools.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Re-create icons when Alpine updates
+        document.addEventListener('alpine:initialized', () => {
+            setTimeout(() => lucide.createIcons(), 100);
+        });
+    </script>
+</body>
+</html>
